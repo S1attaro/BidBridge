@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load bb %}
+{% block title %}Saved jobs{% endblock %}
+{% block content %}
+<div class="wrap page">
+  <div class="page-head">
+    <div><h1>Saved jobs</h1><p>Soonest due first.</p></div>
+    <div class="key" aria-label="Color key: days left to bid"><b>Days left</b><span>Now</span><i></i><span>3 wks+</span></div>
+  </div>
+  <div class="list">
+    {% for s in saved %}
+      {% with c=s.contract %}
+      <div class="row">
+        <div class="days" style="{{ c.days_left|urgency_style }}">{% if c.days_left < 0 %}<b>&ndash;</b><small>closed</small>{% else %}<b>{{ c.time_left.0 }}</b><small>{{ c.time_left.1 }}</small>{% endif %}</div>
+        <div>
+          <a class="t stretch js-open" href="{{ c.get_absolute_url }}" data-panel="{{ c.get_absolute_url }}?panel=1" title="{{ c.title }}">{{ c.display_title }}</a>{% if c.is_demo %}<span class="demo">Demo</span>{% endif %}
+          <div class="m"><span class="status status-{{ s.status }}">{{ s.get_status_display }}</span><span>{{ c.place|default:"Place not listed" }}</span>{% if c.agency %}<span>{{ c.agency.short_name }}</span>{% endif %}</div>
+          {% if s.note %}<div class="note">{{ s.note|linebreaksbr }}</div>{% endif %}
+          <div class="row-links"><a href="{% url 'saved:edit' s.pk %}">Update status or notes</a><a href="{% url 'saved:delete' s.pk %}" style="color:var(--red)">Remove</a></div>
+        </div>
+        {% if c.bid_url %}<a class="bid-sm" href="{{ c.bid_url }}" target="_blank" rel="noopener" data-track="bid" data-notice="{{ c.notice_id }}">Bid <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h6v6M11 3L3.5 10.5" stroke-linecap="round"/></svg></a>{% else %}<span class="bid-sm off">Demo</span>{% endif %}
+        <span></span>
+      </div>
+      {% endwith %}
+    {% empty %}
+      <div class="empty"><b>No saved jobs yet.</b>Tap the heart on any job to keep it here.<br><br><a class="btn dark" href="{% url 'contracts:list' %}">Find jobs</a></div>
+    {% endfor %}
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" aria-label="Job details" aria-hidden="true"></aside>
+{% endblock %}
+{% block scripts %}{% include "includes/panel_script.html" %}{% endblock %}

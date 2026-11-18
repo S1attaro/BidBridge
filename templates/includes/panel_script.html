@@ -1,0 +1,24 @@
+<script>{% include "summaries/summary_script.js" %}</script>
+<script>
+// Open a job's details in the side panel instead of a new page.
+(function () {
+  var panel = document.getElementById("panel"), scrim = document.getElementById("scrim"), opener = null;
+  document.addEventListener("click", function (e) {
+    var link = e.target.closest(".js-open");
+    if (!link || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    opener = link;
+    panel.innerHTML = '<div class="p-body"><div class="loading-line" style="padding-top:30px"><span class="spinner"></span>Opening...</div></div>';
+    panel.classList.add("open"); panel.setAttribute("aria-hidden", "false"); scrim.classList.add("on");
+    fetch(link.dataset.panel).then(function (r) { return r.text(); }).then(function (html) {
+      panel.innerHTML = html;
+      window.hookSummary(panel);
+      var close = panel.querySelector(".js-close");
+      if (close) { close.addEventListener("click", hide); close.focus(); }
+    });
+  });
+  function hide() { panel.classList.remove("open"); panel.setAttribute("aria-hidden", "true"); scrim.classList.remove("on"); if (opener) opener.focus({ preventScroll: true }); }
+  scrim.addEventListener("click", hide);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && panel.classList.contains("open")) hide(); });
+})();
+</script>

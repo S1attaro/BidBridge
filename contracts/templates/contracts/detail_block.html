@@ -1,0 +1,56 @@
+{% load bb %}
+<div class="detail" data-notice="{{ contract.notice_id }}">
+  <div class="p-head">
+    <span class="chip" style="{{ contract.days_left|urgency_chip }}">{% if contract.days_left < 0 %}Closed{% elif contract.days_left == 0 %}Closes in {{ contract.time_left.0 }} {{ contract.time_left.1 }}{% elif contract.days_left == 1 %}1 day left{% else %}{{ contract.days_left }} days left{% endif %}</span>
+    {% if in_panel %}<button class="icon-btn js-close" type="button" aria-label="Close"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>{% endif %}
+  </div>
+  <div class="p-body">
+    {% if in_panel %}<h3>{{ contract.display_title }}{% if contract.is_demo %}<span class="demo">Demo</span>{% endif %}</h3>
+    {% else %}<h1 class="d-title">{{ contract.display_title }}{% if contract.is_demo %}<span class="demo">Demo</span>{% endif %}</h1>{% endif %}
+    {% if contract.display_title != contract.title %}<p class="full-title"><span>Full title</span>{{ contract.title }}</p>{% endif %}
+    <div class="p-sub">{% if contract.trade_name %}<b>{{ contract.trade_name }}</b> for {% endif %}{{ contract.agency.short_name|default:"Agency not listed" }} in {{ contract.place|default:"a place not listed" }}</div>
+
+    <div class="facts">
+      <div><label>Due</label><b>{{ contract.due_date|date:"M j" }}</b></div>
+      <div><label>Distance</label><b>{% if miles is not None %}{{ miles }} mi{% elif user.is_authenticated %}<a href="{% url 'matches:profile' %}">Add ZIP</a>{% else %}-{% endif %}</b></div>
+      <div><label>Who can bid</label><b>{% if can_bid is True %}<span style="color:var(--ok)">You can bid</span>{% elif can_bid is False %}{{ contract.set_aside_name }} only{% else %}{{ contract.set_aside_name }}{% endif %}</b></div>
+    </div>
+
+    {% include "summaries/summary_box.html" with summary=contract.summary %}
+
+    <h4>Key dates</h4>
+    <div class="dates">
+      <div class="date"><span>Bids due</span><div>{{ contract.due_date|date:"M j, g:i A" }}<a href="{% url 'contracts:calendar' contract.notice_id %}">Add to calendar</a></div></div>
+      {% for d in contract.summary.key_dates %}<div class="date"><span>{{ d.what }}</span><div>{{ d.when }}</div></div>{% endfor %}
+    </div>
+
+    <details class="more">
+      <summary>Full posting and details</summary>
+      {% if contract.description_text %}<div class="posting">{{ contract.description_text|striptags|linebreaksbr }}</div>
+      {% elif contract.bid_url %}<p class="small muted">We don't have the full text. <a href="{{ contract.bid_url }}" target="_blank" rel="noopener">Read it on SAM.gov</a>.</p>{% endif %}
+      <dl class="terms">
+        <dt>Stage</dt><dd>{{ contract.notice_type_name|default:"Not listed" }}</dd>
+        <dt>Type of work</dt><dd>{{ contract.trade_name|default:"Other" }} (code {{ contract.naics_code|default:"none" }})</dd>
+        <dt>Job number</dt><dd>{{ contract.solicitation_number|default:contract.notice_id }}</dd>
+        <dt>Posted</dt><dd>{{ contract.posted_date|date:"M j, Y"|default:"Not listed" }}</dd>
+        {% if contract.agency.office %}<dt>Office</dt><dd>{{ contract.agency.office }}</dd>{% endif %}
+      </dl>
+    </details>
+  </div>
+  <div class="p-foot">
+    {% if contract.bid_url %}
+      <a class="btn primary grow" href="{{ contract.bid_url }}" target="_blank" rel="noopener" data-track="bid" data-notice="{{ contract.notice_id }}">Bid on SAM.gov <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3h6v6M11 3L3.5 10.5" stroke-linecap="round"/></svg></a>
+    {% else %}
+      <span class="btn off grow" title="Demo jobs are made up, so they have no SAM.gov page.">Demo job, no SAM.gov page</span>
+    {% endif %}
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'saved:toggle' contract.notice_id %}" class="js-save">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ contract.get_absolute_url }}">
+        <button class="btn{% if is_saved %} saved{% endif %}" aria-pressed="{% if is_saved %}true{% else %}false{% endif %}">{% if is_saved %}Saved{% else %}Save{% endif %}</button>
+      </form>
+    {% else %}
+      <a class="btn" href="{% url 'login' %}?next={{ contract.get_absolute_url }}">Save</a>
+    {% endif %}
+  </div>
+  {% if contract.bid_url %}<p class="p-note">Opens the official posting. You send your bid on SAM.gov.</p>{% else %}<p class="p-note">Demo jobs are made up for testing.</p>{% endif %}
+</div>

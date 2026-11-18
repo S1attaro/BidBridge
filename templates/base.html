@@ -1,0 +1,110 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}BidBridge{% endblock %} | BidBridge</title>
+  <meta name="description" content="Find government jobs you can win. Every open federal job for your trade, in plain words, with a direct link to bid.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2317181c'/%3E%3Cpath d='M4.5 15.5c2-5 13-5 15 0' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3Cpath d='M4 15.5h16' stroke='white' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preload" href="{% static 'fonts/Geist-Variable.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}?v=12">
+  {% block head %}{% endblock %}
+</head>
+<body data-page="{{ request.resolver_match.namespace }}:{{ request.resolver_match.url_name }}">
+  <header class="bar">
+    <div class="wrap">
+      <a class="logo" href="{% url 'core:home' %}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#17181c"/><path d="M4.5 15.5c2-5 13-5 15 0" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M4 15.5h16M9 15.5v-3M12 15.5v-4M15 15.5v-3" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        BidBridge</a>
+      <form class="search" action="{% url 'contracts:list' %}" method="get" role="search">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg>
+        <input type="search" name="q" class="js-top-search" placeholder="Search jobs, agencies, or cities" value="{{ request.GET.q }}" aria-label="Search jobs">
+        <kbd>/</kbd>
+      </form>
+      {% with name=request.resolver_match.namespace %}
+      <nav class="nav" aria-label="Main">
+        <a href="{% url 'contracts:list' %}{% if request.session.last_browse %}?{{ request.session.last_browse }}{% endif %}" class="nav-hide-sm {% if name == 'contracts' or name == 'core' and request.resolver_match.url_name == 'home' %}on{% endif %}">Jobs</a>
+        <a href="{% url 'matches:list' %}" class="nav-hide-sm {% if name == 'matches' and request.resolver_match.url_name != 'profile' %}on{% endif %}">My matches</a>
+        <a href="{% url 'saved:list' %}" class="{% if not user.is_authenticated %}nav-hide-sm {% endif %}{% if name == 'saved' %}on{% endif %}">Saved <span class="count-badge{% if saved_ids %} on{% endif %}" id="savedCount">{{ saved_ids|length }}</span></a>
+        {% if user.is_authenticated %}
+          <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="navlink">Log out</button></form>
+          <a class="avatar" href="{% url 'matches:profile' %}" title="Your profile" aria-label="Your profile">{{ user.username|first|upper }}</a>
+        {% else %}
+          <a href="{% url 'login' %}">Log in</a>
+          <a class="cta" href="{% url 'core:signup' %}">Get started</a>
+        {% endif %}
+      </nav>
+      {% endwith %}
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if messages %}
+  <div class="messages" role="status">
+    {% for message in messages %}<div class="toast {{ message.tags }}">{{ message }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  <footer>
+    <div class="wrap">
+      <span>BidBridge</span>
+      <span>Job data from SAM.gov</span>
+      <span>Always read the full posting before you bid</span>
+      <a href="{% url 'core:about' %}">How it works</a>
+    </div>
+  </footer>
+
+  {% csrf_token %}
+  <script>
+  (function () {
+    var csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+    // Press "/" to jump to search.
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "/" || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+      var box = document.querySelector(".js-top-search");
+      if (!box || box.offsetParent === null) return;
+      e.preventDefault(); box.focus();
+    });
+
+    // Save without leaving the page. Works for any form with class js-save.
+    document.addEventListener("submit", function (e) {
+      var form = e.target.closest(".js-save");
+      if (!form) return;
+      e.preventDefault();
+      fetch(form.action, {method: "POST", body: new FormData(form), headers: {"X-Requested-With": "fetch"}})
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          document.querySelectorAll('.js-save[action="' + form.getAttribute("action") + '"] button').forEach(function (b) {
+            b.setAttribute("aria-pressed", data.saved);
+            b.classList.toggle("on", data.saved);
+            b.classList.toggle("saved", data.saved && b.classList.contains("btn"));
+            if (b.classList.contains("btn")) b.textContent = data.saved ? "Saved" : "Save";
+            b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop");
+          });
+          var badge = document.getElementById("savedCount");
+          if (badge) {
+            var n = Math.max(0, (+badge.textContent || 0) + (data.saved ? 1 : -1));
+            badge.textContent = n; badge.classList.toggle("on", n > 0);
+          }
+        })
+        .catch(function () { form.submit(); });
+    });
+
+    // Count clicks to SAM.gov in the background.
+    document.addEventListener("click", function (e) {
+      var link = e.target.closest("[data-track=bid]");
+      if (!link) return;
+      var data = new FormData();
+      data.append("csrfmiddlewaretoken", csrf);
+      data.append("page", document.body.dataset.page || "");
+      navigator.sendBeacon("/contracts/" + link.dataset.notice + "/bid-click/", data);
+    });
+  })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

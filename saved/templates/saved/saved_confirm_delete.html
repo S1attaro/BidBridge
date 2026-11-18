@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Remove saved job{% endblock %}
+{% block content %}
+<div class="wrap page">
+  <div class="card narrow">
+    <h1 style="font-size:22px">Remove this job?</h1>
+    <p>{{ object.contract.display_title }}</p>
+    <p class="muted small">Your notes for this job will be deleted.</p>
+    <form method="post" style="display:flex;gap:8px">
+      {% csrf_token %}
+      <button type="submit" class="btn danger grow">Yes, remove it</button>
+      <a class="btn" href="{% url 'saved:list' %}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

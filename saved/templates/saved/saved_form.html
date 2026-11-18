@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Update saved job{% endblock %}
+{% block content %}
+<div class="wrap page">
+  <div class="card narrow">
+    <p class="small"><a href="{% url 'saved:list' %}">&larr; Saved jobs</a></p>
+    <h1 style="font-size:22px">{{ object.contract.display_title }}</h1>
+    <p class="muted small" style="margin:0 0 20px">Due {{ object.contract.due_date|date:"M j, Y" }}</p>
+    <form method="post">
+      {% csrf_token %}
+      {% include "includes/form.html" %}
+      <button type="submit" class="btn dark full">Save changes</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

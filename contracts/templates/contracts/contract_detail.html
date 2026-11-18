@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ contract.display_title }}{% endblock %}
+{% block content %}
+<div class="wrap page">
+  <p class="small" style="max-width:640px;margin:0 auto 12px"><a href="{% url 'contracts:list' %}">&larr; All jobs</a></p>
+  <div class="detail-page">{% include "contracts/detail_block.html" %}</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+{% include "summaries/summary_script.js" %}
+</script>
+{% endblock %}

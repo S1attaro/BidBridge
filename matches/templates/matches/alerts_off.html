@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Job emails{% endblock %}
+{% block content %}
+<div class="wrap page">
+  <div class="card narrow">
+    {% if done %}
+      <h1 style="font-size:1.375rem">Emails stopped</h1>
+      <p>You won't get any more job emails. You can turn them back on from your profile.</p>
+      <a class="btn" href="{% url 'matches:profile' %}">Go to my profile</a>
+    {% else %}
+      <h1 style="font-size:1.375rem">Stop job emails?</h1>
+      <p class="muted">We'll stop sending new jobs to {{ profile.alert_email }}.</p>
+      <form method="post" style="display:flex;gap:8px">
+        {% csrf_token %}
+        <button type="submit" class="btn dark grow">Stop emails</button>
+        <a class="btn" href="{% url 'core:home' %}">Keep them</a>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

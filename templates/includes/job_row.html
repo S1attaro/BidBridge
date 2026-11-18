@@ -1,0 +1,18 @@
+{% load bb %}
+<div class="row" data-notice="{{ c.notice_id }}"{% if c.lat %} data-lat="{{ c.lat }}" data-lon="{{ c.lon }}"{% endif %} data-days="{{ c.days_left }}" data-st="{{ c.place_state }}">
+  <div class="days" style="{{ c.days_left|urgency_style }}"><b>{{ c.time_left.0 }}</b><small>{{ c.time_left.1 }}</small></div>
+  <div>
+    <a class="t stretch js-open" href="{{ c.get_absolute_url }}" data-panel="{{ c.get_absolute_url }}?panel=1" title="{{ c.title }}">{{ c.display_title }}</a>{% if c.is_demo %}<span class="demo">Demo</span>{% endif %}
+    {% if reason %}<div class="reason">&#10003; {{ reason }}</div>{% endif %}
+    <div class="m">
+      {% if c.trade_name %}<span class="trade">{{ c.trade_name }}</span>{% endif %}
+      <span>{{ c.place|default:"Place not listed" }}</span>
+      {% if c.miles is not None %}<span>{{ c.miles }} mi away</span>{% endif %}
+      {% if c.agency %}<span>{{ c.agency.short_name }}</span>{% endif %}
+      {% if not reason %}{% if c.can_bid is True %}<span class="can">You can bid</span>{% elif c.can_bid is False %}<span class="cant">{{ c.set_aside_name }} only</span>{% elif c.set_aside_name != "Open to anyone" %}<span>{{ c.set_aside_name }}</span>{% endif %}{% endif %}
+    </div>
+  </div>
+  <span class="due-on">{% if c.due_date %}Due {{ c.due_date|date:"M j" }}{% endif %}</span>
+  {% if c.bid_url %}<a class="bid-sm" href="{{ c.bid_url }}" target="_blank" rel="noopener" data-track="bid" data-notice="{{ c.notice_id }}">Bid <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h6v6M11 3L3.5 10.5" stroke-linecap="round"/></svg><span class="sr-only"> on SAM.gov (opens in a new tab)</span></a>{% else %}<span class="bid-sm off" title="Demo jobs have no SAM.gov page">Demo</span>{% endif %}
+  {% include "includes/heart.html" %}
+</div>

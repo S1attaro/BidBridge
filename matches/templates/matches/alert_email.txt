@@ -1,0 +1,11 @@
+{% load bb %}New jobs that fit your work:
+{% for c in jobs %}
+{{ c.display_title }}
+{{ c.place|default:"Place not listed" }} | {{ c.days_left|days_text }}
+{{ c.reason }}
+{% if c.bid_url %}See it on SAM.gov: {{ c.bid_url }}{% else %}{{ site }}{{ c.get_absolute_url }}{% endif %}
+{% endfor %}
+All your matches: {{ matches_url }}
+
+Always read the full posting on SAM.gov before you bid.
+Stop these emails: {{ stop_url }}

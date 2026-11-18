@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Get started{% endblock %}
+{% block content %}
+<div class="wrap page">
+  <div class="card narrow auth">
+    <h1>Get started free</h1>
+    <p class="muted">See the jobs that fit your business in about a minute.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% include "includes/form.html" %}
+      <label class="show-pass"><input type="checkbox" class="js-show-pass"> Show password</label>
+      <button type="submit" class="btn dark full">Create account</button>
+    </form>
+    <p class="switch-link">Have an account? <a href="{% url 'login' %}">Log in</a></p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelector(".js-show-pass").addEventListener("change", function (e) {
+  document.querySelector("input[name=password]").type = e.target.checked ? "text" : "password";
+});
+</script>
+{% endblock %}

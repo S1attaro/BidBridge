@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My matches{% endblock %}
+{% block content %}
+<div class="wrap page">
+  <div class="page-head">
+    <div>
+      <h1>Jobs that fit you</h1>
+      <p>{{ profile.trade_names|join:", " }} in {{ profile.state_names|join:", " }}. <a href="{% url 'matches:profile' %}">Change</a></p>
+    </div>
+    <form method="post" action="{% url 'matches:refresh' %}">{% csrf_token %}<button class="btn">Check for new jobs</button></form>
+  </div>
+  <div class="list">
+    {% for m in matches %}
+      {% if forloop.first %}<div class="group"><i style="background:var(--blue)"></i>Best fit first <span>{{ matches|length }}</span></div>{% endif %}
+      {% include "includes/job_row.html" with c=m.contract reason=m.reason %}
+    {% empty %}
+      <div class="empty"><b>No open jobs fit your profile right now.</b>Try adding more states or types of work.<br><br><a class="btn dark" href="{% url 'matches:profile' %}">Change my profile</a></div>
+    {% endfor %}
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" aria-label="Job details" aria-hidden="true"></aside>
+{% endblock %}
+{% block scripts %}{% include "includes/panel_script.html" %}{% endblock %}

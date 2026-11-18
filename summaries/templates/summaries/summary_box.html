@@ -1,0 +1,20 @@
+<div id="summary-box" class="summary-box">
+  {% if summary %}
+    <h4>In plain words {% if summary.source == "ai" %}<span class="ai-tag">AI summary</span>{% else %}<span class="ai-tag plain">Basic summary</span>{% endif %}</h4>
+    {% if summary.job %}<p class="job-line">{{ summary.job }}</p>{% endif %}
+    <p>{{ summary.summary }}</p>
+    {% if summary.source == "ai" %}<p class="fineprint">AI can make mistakes. Check the full posting before you bid.</p>
+    {% else %}<form method="post" action="{% url 'summaries:make' contract.notice_id %}" class="js-summary fineprint">{% csrf_token %}<input type="hidden" name="retry" value="1">Made from the basic job facts{% if limited %}. The AI limit was reached, try later{% endif %}. <button class="link-btn">Try AI summary</button></form>
+    {% endif %}
+    {% if summary.requirements %}
+      <h4>You'll need</h4>
+      <ul class="needs">{% for item in summary.requirements %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% endif %}
+  {% else %}
+    <h4>In plain words</h4>
+    <div class="loading-line"><span class="spinner" aria-hidden="true"></span><span class="loading">Writing a short summary...</span></div>
+    <form method="post" action="{% url 'summaries:make' contract.notice_id %}" class="js-summary js-auto">{% csrf_token %}
+      <noscript><button class="btn" type="submit">Make a plain summary</button></noscript>
+    </form>
+  {% endif %}
+</div>

@@ -1,0 +1,22 @@
+{% load humanize bb %}
+<div hidden class="js-meta" data-count="{{ total }}"></div>
+{% for g in groups %}
+  <div class="group"><i style="background:{{ g.days|urgency_dot }}"></i>{{ g.label }} <span>{{ g.count|intcomma }}</span></div>
+  {% if g.note %}<p class="group-note">{{ g.note }}</p>{% endif %}
+  {% for c in g.items %}{% include "includes/job_row.html" %}{% endfor %}
+  {% if not when and g.count > g.items|length %}
+    <button type="button" class="see-band" data-when="{{ g.key }}">See all {{ g.count|intcomma }} {% if g.key == "today" %}closing today{% elif g.key == "later" %}due later{% else %}due {{ g.label|lower }}{% endif %}</button>
+  {% endif %}
+{% empty %}
+  <div class="empty">
+    <b>No open jobs match.</b>
+    {% if request.GET.can_bid %}Try turning off "Only jobs I can bid on", or pick more states.{% elif when %}Try "All", or pick more states.{% else %}Try another state, or remove a filter.{% endif %}
+  </div>
+{% endfor %}
+{% if is_paginated %}
+<nav class="pager" aria-label="More jobs">
+  {% if page_obj.has_previous %}<a class="btn js-page" href="?{{ query_string }}&page={{ page_obj.previous_page_number }}">Back</a>{% endif %}
+  <span class="muted small">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="btn js-page" href="?{{ query_string }}&page={{ page_obj.next_page_number }}">Next page</a>{% endif %}
+</nav>
+{% endif %}

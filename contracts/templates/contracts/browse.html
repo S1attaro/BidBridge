@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static humanize bb %}
+{% block title %}Find government jobs you can win{% endblock %}
+{% block content %}
+<section class="intro wrap">
+  <h1>Where do you want to work?</h1>
+  <p>Click a state on the map, or pick from the list. Darker blue means more open jobs.</p>
+</section>
+
+<div class="pickarea wrap">
+  <div class="picker">
+    <div class="picker-top">
+      <label for="stateFind">Or pick from the list</label>
+      <div class="find"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5" stroke-linecap="round"/></svg>
+        <input id="stateFind" placeholder="Type a state" autocomplete="off" aria-controls="opts"></div>
+      <div class="picked" id="pickedChips"></div>
+    </div>
+    <ul class="opts" id="opts" role="listbox" aria-label="States" aria-multiselectable="true">
+      {% for s in states %}<li class="opt" role="option" data-st="{{ s.code }}" aria-selected="false"><span class="box"></span><span class="name">{{ s.name }}</span><span class="num">{{ s.count|intcomma }}</span></li>{% endfor %}
+    </ul>
+    <div class="picker-foot"><button class="clear" id="clearSt" type="button">Clear</button><button class="go" id="goSt" type="button" disabled>Show jobs</button></div>
+  </div>
+  <div class="mapwrap" id="mapwrap">
+    <svg class="map" id="map" viewBox="0 0 975 610" role="group" aria-label="Map of the United States. Choose a state."></svg>
+    <div class="tip" id="tip"></div>
+  </div>
+</div>
+<div class="scale">Fewer jobs <i></i> More jobs</div>
+<div class="hint"><a class="down" href="#listings">See all {{ total_open|intcomma }} jobs <svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></a></div>
+
+<section class="listings" id="listings">
+  <div class="wrap">
+    <div class="l-head">
+      <h2 id="title">All states <span id="n">{{ page_obj.paginator.count|intcomma }} job{{ page_obj.paginator.count|pluralize }}</span></h2>
+      <div class="chips" id="chips"></div>
+    </div>
+    <form class="tools js-filters" method="get" action="{% url 'contracts:list' %}">
+      <div class="key" aria-label="Color key: days left to bid"><b>Days left</b><span>Now</span><i></i><span>3 wks+</span></div>
+      <span class="sep"></span>
+      <label class="sr-only" for="f-trade">Type of work</label>
+      <select class="select" id="f-trade" name="trade">
+        <option value="">Any work</option>
+        {% for key, name in trades %}<option value="{{ key }}"{% if request.GET.trade == key %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select>
+      <div class="when" role="group" aria-label="Due">
+        {% for value, label, days in due_choices %}
+          <button type="button" data-due="{{ value }}" class="{% if when == value %}on{% endif %}" aria-pressed="{% if when == value %}true{% else %}false{% endif %}">{% if days %}<i style="background:{{ days|urgency_dot }}"></i>{% endif %}{{ label }}</button>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="q" value="{{ request.GET.q }}">
+      {% if profile %}
+        <button type="button" class="toggle" id="canBid" aria-pressed="{% if request.GET.can_bid %}true{% else %}false{% endif %}"><span class="switch"></span>Only jobs I can bid on</button>
+      {% else %}
+        <a class="toggle" href="{% if user.is_authenticated %}{% url 'matches:profile' %}{% else %}{% url 'core:signup' %}{% endif %}"><span class="switch"></span>Only jobs I can bid on</a>
+      {% endif %}
+    </form>
+    <div id="results" aria-live="polite">{% include "contracts/results.html" %}</div>
+  </div>
+</section>
+
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" aria-label="Job details" aria-hidden="true"></aside>
+
+{{ state_counts|json_script:"state-counts" }}
+{{ picked|json_script:"picked-states" }}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/d3-array.min.js' %}"></script>
+<script src="{% static 'js/d3-geo.min.js' %}"></script>
+<script>{% include "summaries/summary_script.js" %}</script>
+<script>window.BB_MAP_URL = "{% static 'data/us-states.json' %}"; window.BB_LIST_URL = "{% url 'contracts:list' %}";</script>
+<script src="{% static 'js/browse.js' %}?v=1"></script>
+{% endblock %}

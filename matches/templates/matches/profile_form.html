@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load bb %}
+{% block title %}Your work{% endblock %}
+{% block content %}
+<div class="wrap page">
+<section class="wizard card">
+  <div class="progress" aria-hidden="true"><div class="progress-bar" style="width: 33%"></div></div>
+  <p class="step-count muted small" aria-live="polite">Step <span class="js-step-num">1</span> of 3</p>
+
+  <form method="post" novalidate class="js-wizard">
+    {% csrf_token %}
+    {% if form.errors %}<div class="flash error">Please fix the items marked in red.</div>{% endif %}
+
+    <fieldset class="wstep" data-step="1">
+      <legend><h1>What work do you do?</h1></legend>
+      <p class="muted">Pick all that fit.</p>
+      {% for e in form.trades.errors %}<p class="error-text" role="alert">{{ e }}</p>{% endfor %}
+      <div class="tiles">
+        {% for opt in form.trades %}
+          <label class="tile" for="{{ opt.id_for_label }}">
+            {{ opt.tag }}
+            <span class="tile-icon" aria-hidden="true">{{ opt.data.value|trade_icon }}</span>
+            <span>{{ opt.choice_label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% include "includes/field.html" with field=form.services %}
+      <div class="wizard-nav"><span></span><button type="button" class="btn dark js-next">Next</button></div>
+    </fieldset>
+
+    <fieldset class="wstep" data-step="2">
+      <legend><h1>Where do you work?</h1></legend>
+      <p class="muted">Pick every state you can work in.</p>
+      {% for e in form.states.errors %}<p class="error-text" role="alert">{{ e }}</p>{% endfor %}
+      <div class="picked js-picked" aria-live="polite"></div>
+      <label class="sr-only" for="state-search">Find a state</label>
+      <input type="search" id="state-search" class="state-search js-state-search" placeholder="Type a state, like Illinois" autocomplete="off">
+      <div class="chips-pick js-state-list">
+        {% for opt in form.states %}
+          <label class="chip-pick" for="{{ opt.id_for_label }}" data-name="{{ opt.choice_label|lower }}">
+            {{ opt.tag }}<span>{{ opt.choice_label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% include "includes/field.html" with field=form.zip_code %}
+      <div class="wizard-nav"><button type="button" class="btn js-back">Back</button><button type="button" class="btn dark js-next">Next</button></div>
+    </fieldset>
+
+    <fieldset class="wstep" data-step="3">
+      <legend><h1>About your business</h1></legend>
+      <p class="muted">Some jobs are only for certain businesses.</p>
+      <div class="tiles tiles-wide">
+        <label class="tile" for="{{ form.is_small.id_for_label }}">
+          {{ form.is_small }}
+          <span class="tile-icon" aria-hidden="true">&#127970;</span>
+          <span>{{ form.is_small.label }}<small>Fewer than about 100 workers</small></span>
+        </label>
+        {% for opt in form.set_asides %}
+          <label class="tile" for="{{ opt.id_for_label }}">
+            {{ opt.tag }}
+            <span class="tile-icon" aria-hidden="true">{{ opt.data.value|set_aside_icon }}</span>
+            <span>{{ opt.choice_label }}<small>Only if certified</small></span>
+          </label>
+        {% endfor %}
+      </div>
+      {% include "includes/field.html" with field=form.business_name %}
+      <div class="alert-box">
+        <label class="tile" for="{{ form.alerts_on.id_for_label }}">
+          {{ form.alerts_on }}
+          <span class="tile-icon" aria-hidden="true">&#128235;</span>
+          <span>{{ form.alerts_on.label }}<small>One email when new jobs come in. Stop any time.</small></span>
+        </label>
+        <div class="alert-email"{% if not form.alerts_on.value %} hidden{% endif %}>
+          {% include "includes/field.html" with field=form.alert_email %}
+        </div>
+      </div>
+      <div class="wizard-nav"><button type="button" class="btn js-back">Back</button><button type="submit" class="btn primary">Show my jobs</button></div>
+    </fieldset>
+  </form>
+</section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var alertsOn = document.getElementById("{{ form.alerts_on.id_for_label }}");
+  var alertEmail = document.querySelector(".alert-email");
+  alertsOn.addEventListener("change", function () {
+    alertEmail.hidden = !alertsOn.checked;
+    if (alertsOn.checked) alertEmail.querySelector("input").focus();
+  });
+})();
+(function () {
+  var form = document.querySelector(".js-wizard");
+  var steps = form.querySelectorAll(".wstep");
+  var bar = document.querySelector(".progress-bar");
+  var num = document.querySelector(".js-step-num");
+  var current = 0;
+
+  // Start on the first step with an error, if the server sent any back.
+  steps.forEach(function (s, i) { if (current === 0 && s.querySelector(".error-text")) current = i; });
+
+  function show(i) {
+    steps.forEach(function (s, j) { s.hidden = j !== i; });
+    bar.style.width = ((i + 1) / steps.length * 100) + "%";
+    num.textContent = i + 1;
+    current = i;
+    var heading = steps[i].querySelector("h1");
+    if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
+    window.scrollTo({top: 0, behavior: "smooth"});
+  }
+
+  function stepOk(i) {
+    var need = { 0: "trades", 1: "states" }[i];
+    if (!need) return true;
+    var ok = form.querySelector('input[name="' + need + '"]:checked');
+    var msg = steps[i].querySelector(".js-need");
+    if (!ok && !msg) {
+      msg = document.createElement("p");
+      msg.className = "error-text js-need";
+      msg.setAttribute("role", "alert");
+      msg.textContent = i === 0 ? "Pick at least one type of work." : "Pick at least one state.";
+      steps[i].querySelector("p.muted").after(msg);
+    }
+    if (ok && msg) msg.remove();
+    return !!ok;
+  }
+
+  form.querySelectorAll(".js-next").forEach(function (b) {
+    b.addEventListener("click", function () { if (stepOk(current)) show(current + 1); });
+  });
+  form.querySelectorAll(".js-back").forEach(function (b) {
+    b.addEventListener("click", function () { show(current - 1); });
+  });
+  show(current);
+
+  // State picker: type to filter, picked states show as chips you can tap to remove.
+  var search = document.querySelector(".js-state-search");
+  var list = document.querySelectorAll(".js-state-list .chip-pick");
+  var picked = document.querySelector(".js-picked");
+
+  function drawPicked() {
+    picked.innerHTML = "";
+    list.forEach(function (label) {
+      var box = label.querySelector("input");
+      if (!box.checked) return;
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip-on";
+      chip.textContent = label.textContent.trim() + " ×";
+      chip.setAttribute("aria-label", "Remove " + label.textContent.trim());
+      chip.addEventListener("click", function () { box.checked = false; drawPicked(); });
+      picked.appendChild(chip);
+    });
+  }
+  list.forEach(function (label) { label.querySelector("input").addEventListener("change", drawPicked); });
+  search.addEventListener("input", function () {
+    var q = search.value.trim().toLowerCase();
+    list.forEach(function (label) { label.hidden = q && label.dataset.name.indexOf(q) === -1; });
+  });
+  search.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    var first = Array.prototype.find.call(list, function (l) { return !l.hidden; });
+    if (first) { first.querySelector("input").checked = true; drawPicked(); search.value = ""; search.dispatchEvent(new Event("input")); }
+  });
+  drawPicked();
+})();
+</script>
+{% endblock %}
