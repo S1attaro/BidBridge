@@ -1,7 +1,9 @@
 import json
+from io import StringIO
 from unittest.mock import patch
 
 from django.core.cache import cache
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -155,3 +157,31 @@ class KeyDateTests(TestCase):
 
     def test_not_a_list(self):
         self.assertEqual(ai.check_dates("Nov 30", "Nov 30", []), [])
+
+
+@override_settings(GROQ_API_KEY="test")
+class SummarizeCommandTests(TestCase):
+    def setUp(self):
+        self.contract = make_contract("c1", "Roof Replacement, Building 12", text=TEXT)
+
+    def run_command(self, *args):
+        with patch("summaries.management.commands.summarize.time.sleep") as sleep:
+            call_command("summarize", *args, stdout=StringIO())
+        return sleep
+
+    def test_busy_groq_waits_and_tries_again(self):
+        busy = ApiError("groq returned HTTP 429 (Too Many Requests)", status=429)
+        with patch.object(ai.clients, "post_json", side_effect=[busy, groq_reply(GOOD)]):
+            sleep = self.run_command("--state", "IL")
+        self.assertEqual(ContractSummary.objects.get(contract=self.contract).source, "ai")
+        sleep.assert_any_call(30)
+
+    def test_fix_simple_only_redoes_simple_ones(self):
+        other = make_contract("c2", "Lawn Care", text=TEXT)
+        ai.summarize(self.contract, use_ai=False)
+        with patch.object(ai.clients, "post_json", return_value=groq_reply(GOOD)):
+            ai.summarize(other)
+        with patch.object(ai.clients, "post_json", return_value=groq_reply(GOOD)) as fake:
+            self.run_command("--fix-simple")
+        self.assertEqual(fake.call_count, 1)
+        self.assertEqual(ContractSummary.objects.get(contract=self.contract).source, "ai")
