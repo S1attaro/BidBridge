@@ -63,6 +63,10 @@ python manage.py runserver
 | `SAM_DAILY_CALL_CAP` | Stop after this many SAM.gov calls a day. Default 8. |
 | `GROQ_API_KEY` | Free key from https://console.groq.com/keys |
 | `GROQ_MODEL` | Default `openai/gpt-oss-20b` |
+| `AI_BASE_URL` | Blank means Groq. Any OpenAI-style service works, like UIUC's Lumen. |
+| `SAM_EXTRACT_URL` | Blank means the normal SAM.gov nightly file. |
+| `SITE_URL` | Used for links in job alert emails. |
+| `EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL` | Optional. For sending real job alert emails. |
 
 ## Data
 
@@ -115,6 +119,11 @@ python manage.py geocode
 ZIP locations come from `data/zips.csv` (built from the free `zipcodes` package). State shapes in
 `static/data/us-states.json` come from the `us-atlas` package (U.S. Census boundaries).
 
+**Cleanup.** Parts and supply orders are hidden, since BidBridge is for on-site work. When an
+agency reposts a job, only the newest copy shows (copies share a solicitation number). Long titles
+get a shorter version for lists (`contracts/cleanup.py`). On Nov 18, 11,802 loaded notices became
+2,091 real, on-site jobs still open for bids.
+
 **Demo data.** `python manage.py seed_demo` adds 30 made-up contracts, labeled "Demo".
 `python manage.py seed_demo --clear` removes them.
 
@@ -126,7 +135,12 @@ summaries ahead of time (faster pages, good for a demo):
 ```
 python manage.py summarize --limit 20 --state IL
 python manage.py summarize --limit 20 --trade roofing --fetch-text
+python manage.py summarize --fix-simple --state IL
 ```
+
+The command waits 3 seconds between AI calls (`--wait`) so it stays under Groq's free rate limit.
+If Groq is busy, it waits 30 seconds and tries once more. `--fix-simple` redoes jobs that got a
+simple summary.
 
 `--fetch-text` gets missing posting text from SAM.gov (one call per contract, and it always
 leaves 2 calls for the daily update). Without `GROQ_API_KEY`, or when Groq fails, a simple
@@ -162,3 +176,11 @@ GET /api/contracts/<notice_id>/
 ```
 python manage.py test
 ```
+
+146 tests. Outside services (SAM.gov, Groq) are faked, so no keys are needed.
+
+## More docs
+
+- `README_AI.md`: how the AI features work
+- `docs/FIRST_DRAFT.md`: P2-A3 first draft
+- `docs/NOTES.md`: project notes

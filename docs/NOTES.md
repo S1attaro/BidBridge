@@ -13,6 +13,8 @@ python manage.py runserver
 
 Or double-click `run.bat`.
 
+The job list refreshes every morning at 8:00 AM. The Windows Task Scheduler task "BidBridge refresh" runs `update_jobs.bat`. It only runs if the PC is on.
+
 Tests: `python manage.py test`. The yellow WARNING lines during tests are expected. They come from tests that check bad requests and a down AI.
 
 ## Commands
@@ -31,7 +33,7 @@ Tests: `python manage.py test`. The yellow WARNING lines during tests are expect
 - If the download fails, it uses the old file, or loads the last 30 days from the API.
 - **Parts orders are hidden.** Product buys (numeric PSC codes, or "53--" style titles) are not on-site work.
 - **Repeats are hidden.** Agencies repost a job each time they change it, and every copy gets a new notice ID. The copies share a solicitation number, so only the newest one shows.
-- Example run: 11,659 open notices became 2,175 real, unique, on-site jobs.
+- Example run (Nov 18): 11,802 loaded notices became 2,091 real, on-site jobs still open for bids.
 - Map points come from ZIP or city using `data/zips.csv`.
 - The SAM.gov API is capped at 8 calls a day (`SAM_DAILY_CALL_CAP`). Every call is logged in `ApiCall`.
 
@@ -90,7 +92,6 @@ For real emails, use a Gmail app password with `EMAIL_HOST=smtp.gmail.com`.
   - Check whether `sam.gov` and `api.sam.gov` are on the free allowlist.
   - If they aren't, refresh on the PC and move the data with `dumpdata` and `loaddata`.
   - Don't install PyTorch on the server.
-- Daily refresh: set up Task Scheduler to run `update_jobs.bat`.
 - Final (Dec 8):
   - 5-test eval table, 2 failure cases, and one before/after improvement
   - Cost comparison (Groq vs local GPU)
